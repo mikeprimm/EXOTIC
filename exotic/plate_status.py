@@ -5,12 +5,15 @@ class PlateStatus:
         self.filenameList = []
         self.filename = "N/A"
         self.errorcodes = set()
+        self.globalerrorcodes = set()
+        self.globalerrors = set()
         self.logfunc = logfunc
         self.errorcodes.add("outofframe_target")
         self.errorcodes.add("lowflux_target")
         self.errorcodes.add("skybg_target")
         self.errorcodes.add("fits_error")
         self.errorcodes.add("alignment_error")
+        self.globalerrorcodes.add("phase_warning")
     # Initialze set of files, as well as ordered index
     def initializeFilenames(self, filenames: list):
         self.filenameList = filenames.copy()
@@ -42,6 +45,15 @@ class PlateStatus:
         # Mark error on this file
         rec[errorcode] = True
         self.errorcodes.add(errorcode)
+        # And log new warning
+        self.logfunc(message, warn=True)
+    # Log a global error
+    def _logGlobalError(self, errorcode: str, message: str) -> None:
+        if errorcode in self.globalerrors:
+            return
+        # Mark error on this file
+        self.globalerrors.add(errorcode)
+        self.globalerrorcodes.add(errorcode)
         # And log new warning
         self.logfunc(message, warn=True)
     # Report out of frame warning for start ;index' (0=target, 1+=comp #N)
@@ -82,6 +94,16 @@ class PlateStatus:
     def alignmentError(self):
         self._logError("alignment_error",
             f"File {self.filename} failed to align with first file")
+    # Report transit observation phase warning
+    def observationPhaseWarning(self, minT: float, maxT: float, midT: float):        
+        msg = '''
+Warning:
+Estimated mid-transit time is not within the observations
+Check Period & Mid-transit time in inits.json. Make sure the uncertainties are not 0 or Nan.
+    obs start  : {0}
+    obs end    : {1}
+    tmid prior : {2}'''.format(minT, maxT, midT)
+        self._logGlobalError("phase_warning", msg)
     # Write plate status to CSV file
     def writePlateStatus(self, file: str):
         with open(file, 'w') as f:

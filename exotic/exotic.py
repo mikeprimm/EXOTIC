@@ -1578,10 +1578,12 @@ def fit_lightcurve(times, tFlux, cFlux, airmass, ld, pDict):
     }
 
     arrayPhases = (arrayTimes - pDict['midT']) / prior['per']
-    prior['tmid'] = pDict['midT'] + np.floor(arrayPhases).max() * prior['per']
+    # Compute closest midpoint to data range (don't assume midpoint in obs range)
+    closestPhase = round((arrayPhases.min() + arrayPhases.max()) / 2)
+    prior['tmid'] = pDict['midT'] + closestPhase * prior['per']
 
-    upper = prior['tmid'] + np.abs(25 * pDict['midTUnc'] + np.floor(arrayPhases).max() * 25 * pDict['pPerUnc'])
-    lower = prior['tmid'] - np.abs(25 * pDict['midTUnc'] + np.floor(arrayPhases).max() * 25 * pDict['pPerUnc'])
+    upper = prior['tmid'] + np.abs(25 * pDict['midTUnc'] + closestPhase * 25 * pDict['pPerUnc'])
+    lower = prior['tmid'] - np.abs(25 * pDict['midTUnc'] + closestPhase * 25 * pDict['pPerUnc'])
 
     if upper > prior['tmid'] + 0.25 * prior['per']:
         upper = prior['tmid'] + 0.25 * prior['per']
@@ -1589,13 +1591,8 @@ def fit_lightcurve(times, tFlux, cFlux, airmass, ld, pDict):
         lower = prior['tmid'] - 0.25 * prior['per']
 
     if np.floor(arrayPhases).max() - np.floor(arrayPhases).min() == 0:
-        log_info("\nWarning:", warn=True)
-        log_info(" Estimated mid-transit time is not within the observations", warn=True)
-        log_info(" Check Period & Mid-transit time in inits.json. Make sure the uncertainties are not 0 or Nan.", warn=True)
-        log_info(f"  obs start:{arrayTimes.min()}", warn=True)
-        log_info(f"    obs end:{arrayTimes.max()}", warn=True)
-        log_info(f" tmid prior:{prior['tmid']}\n", warn=True)
-
+        plateStatus.observationPhaseWarning(arrayTimes.min(),arrayTimes.max(),prior['tmid'])
+        
     mybounds = {
         'rprs': [0, pDict['rprs'] * 1.25],
         'tmid': [lower, upper],
@@ -2487,9 +2484,11 @@ def main():
         }
 
         phase = (goodTimes - prior['tmid']) / prior['per']
-        prior['tmid'] = pDict['midT'] + np.floor(phase).max() * prior['per']
-        upper = pDict['midT'] + 35 * pDict['midTUnc'] + np.floor(phase).max() * (pDict['pPer'] + 35 * pDict['pPerUnc'])
-        lower = pDict['midT'] - 35 * pDict['midTUnc'] + np.floor(phase).max() * (pDict['pPer'] - 35 * pDict['pPerUnc'])
+        # Compute closest midpoint to data range (don't assume midpoint in obs range)
+        closestPhase = round((phase.min() + phase.max()) / 2)
+        prior['tmid'] = pDict['midT'] + closestPhase * prior['per']
+        upper = pDict['midT'] + 35 * pDict['midTUnc'] + closestPhase * (pDict['pPer'] + 35 * pDict['pPerUnc'])
+        lower = pDict['midT'] - 35 * pDict['midTUnc'] + closestPhase * (pDict['pPer'] - 35 * pDict['pPerUnc'])
 
         # clip bounds so they're within 1 orbit
         if upper > prior['tmid'] + 0.25*prior['per']:
@@ -2498,10 +2497,7 @@ def main():
             lower = prior['tmid'] - 0.25*prior['per']
 
         if np.floor(phase).max() - np.floor(phase).min() == 0:
-            log_info("Error: Estimated mid-transit not in observation range (check priors or observation time)", error=True)
-            log_info(f"start:{np.min(goodTimes)}", error=True)
-            log_info(f"  end:{np.max(goodTimes)}", error=True)
-            log_info(f"prior:{prior['tmid']}", error=True)
+            plateStatus.observationPhaseWarning(np.min(goodTimes),np.max(goodTimes),prior['tmid'])
 
         mybounds = {
             'rprs': [0, pDict['rprs'] * 1.25],
