@@ -863,10 +863,14 @@ def apply_cals(image_data, gen_dark, gen_bias, gen_flat, i):
     if gen_dark.size != 0:
         if i == 0:
             log_info("Dark subtracting images.")
+        # Avoid underflow - dark sub should not cause negative values
+        np.maximum(image_data, gen_dark, out=image_data)
         image_data = image_data - gen_dark
     elif gen_bias.size != 0:  # if a dark is not available, then at least subtract off the pedestal via the bias
         if i == 0:
             log_info("Bias-correcting images.")
+        # Avoid underflow - dark sub should not cause negative values
+        np.maximum(image_data, gen_bias, out=image_data)
         image_data = image_data - gen_bias
     else:
         pass
@@ -1887,6 +1891,8 @@ def main():
 
                 # if the bias exists, bias subtract the flatfield
                 if exotic_infoDict['biases']:
+                    # Avoid underflow - bias subtraction should not cause negatives (really bad...)
+                    np.maximum(notNormFlat, generalBias, out=notNormFlat)
                     notNormFlat = notNormFlat - generalBias
 
                 # NORMALIZE
