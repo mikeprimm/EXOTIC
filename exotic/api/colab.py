@@ -109,7 +109,7 @@ def display_image(filename):
     # )
 
     # create a figure with text on mouse hover
-    fig = figure(tooltips=[("x", "$x"), ("y", "$y"), ("value", "@image")], plot_width=p_width, plot_height=p_height,
+    fig = figure(tooltips=[("x", "$x"), ("y", "$y"), ("value", "@image")], width=p_width, height=p_height,
         tools=[PanTool(),BoxZoomTool(),WheelZoomTool(),ResetTool(),HoverTool()])
     fig.x_range.range_padding = fig.y_range.range_padding = 0
 
@@ -370,10 +370,13 @@ def make_inits_file(planetary_params, image_dir, output_dir, first_image, targ_c
             "Observing Notes": "%s",
 
             "Plate Solution? (y/n)": "y",
-            "Align Images? (y/n)": "y",
+            "Add Comparison Stars from AAVSO? (y/n)": "n",
 
             "Target Star X & Y Pixel": %s,
-            "Comparison Star(s) X & Y Pixel": %s
+            "Comparison Star(s) X & Y Pixel": %s,
+            
+            "Demosaic Format": null,
+            "Demosaic Output": null
     },    
     "optional_info": {
             "Pixel Scale (Ex: 5.21 arcsecs/pixel)": null,
